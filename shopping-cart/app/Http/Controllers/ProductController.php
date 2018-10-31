@@ -1,16 +1,15 @@
 <?php
 namespace App\Http\Controllers;
-use App\Cart;
 use App\Product;
 use App\Order;
-
 use Illuminate\Http\Request;
-use App\Http\Requests;
-use Session;
-use Auth;
-
-use Stripe\Charge;
+use Illuminate\Support\Facades\Session;
+use App\Cart;
 use Stripe\Stripe;
+use Stripe\Charge;
+use Illuminate\Support\Facades\Auth;
+
+
 class ProductController extends Controller
 {
     public function getIndex()
@@ -20,7 +19,9 @@ class ProductController extends Controller
     }
     public function getAddToCart(Request $request, $id)
     {
-        $product = Product::find($id); //se busca el producto 
+        $product = Product::find($id); //se busca el producto
+        $product->quantity -= 1; //se disminuye en 1 la cantidad del producto en la base de datos
+        $product->save(); 
         $oldCart = Session::has('cart') ? Session::get('cart') : null;//Se verifica la sesión por si hay un carro en existencia
         $cart = new Cart($oldCart);//Se construye el carro de compras a partir de uno existente, de ser el caso
         $cart->add($product, $product->id);//Se añade el nuevo producto
@@ -28,6 +29,40 @@ class ProductController extends Controller
         $request->session()->put('cart', $cart);//se almacenan los datos en la sesión
         return redirect()->route('product.index');
     }
+
+    public function getReduceByOne($id) {
+        $product = Product::find($id);
+        $product->quantity += 1; //se disminuye en 1 la cantidad del producto en la base de datos
+        $product->save();
+
+        $oldCart = Session::has('cart') ? Session::get('cart') : null;
+        $cart = new Cart($oldCart);
+        $cart->reduceByOne($id);
+         if (count($cart->items) > 0) {
+            Session::put('cart', $cart);
+        } else {
+            Session::forget('cart');
+        }
+        return redirect()->route('product.shoppingCart');
+    }
+     public function getRemoveItem($id) {
+        $oldCart = Session::has('cart') ? Session::get('cart') : null;
+        $cart = new Cart($oldCart);
+
+        $product = Product::find($id);
+        $product->quantity += $cart->items[$id]['qty']; //se restauran tantos articulos se tenian de dicho prodcuto
+        $product->save();
+
+        $cart->removeItem($id);
+         if (count($cart->items) > 0) {
+            Session::put('cart', $cart);
+        } else {
+            Session::forget('cart');
+        }
+         return redirect()->route('product.shoppingCart');
+    }
+
+
     public function getCart()
     {
         if (!Session::has('cart')) {
@@ -77,6 +112,5 @@ class ProductController extends Controller
         }
         Session::forget('cart');
         return redirect()->route('product.index')->with('success', 'Successfully purchased products!');
-
     }
 }

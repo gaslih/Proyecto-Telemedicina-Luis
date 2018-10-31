@@ -19,20 +19,24 @@
             @foreach($productChunk as $product)
                 <div class="col-sm-6 col-md-4">
                     <div class="thumbnail">
-                        <img src="{{ $product->imagePath }}" alt="..." class="img-responsive">
+                        <img src="{{ $product->imagePath }}" alt="..." class="img-responsive" >
                         <div class="caption">
-                            <h3>{{ $product->title }}</h3>
+                            <h4>{{ $product->title }}</h4>
                             <p class="description">
-                                @if($product->quantity > 2)<!--mostrar existencia-->
+                                @if($product->quantity >= 2)<!--mostrar existencia-->
                                 Disponible
-                                @else
+                                @elseif($product->quantity == 1)
                                 Quedan pocos!
+                                @elseif($product->quantity == 0)
+                                AGOTADO
                                 @endif
                                 </p>
                             <div class="clearfix">
                                 <div class="pull-left price">${{ $product->price }}</div>
+                                @if($product->quantity > 0)
                                 <a href="{{ route('product.addToCart', ['id' => $product->id]) }}"
                                    class="btn btn-success pull-right" role="button">Agregar</a>
+                                   @endif
                             </div>
                         </div>
                     </div>
